@@ -13,7 +13,6 @@ COPY package*.json ./
 RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/.env ./.env
 
 CMD ["node", "dist/server.js"]
 
