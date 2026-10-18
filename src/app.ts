@@ -9,6 +9,7 @@ import push_plugin from "./modules/push/push.plugin.js";
 import {DerivedKey} from "./modules/common/crypto/derived-key.js";
 import UserService from "./modules/user/user.service.js";
 import upload_plugin from "./modules/common/upload/upload.plugin.js";
+import version_plugin from "./modules/version/version.plugin.js";
 
 export async function bootstrap({ port = 3001, orm }: { port?: number, orm?: MikroORM } = {}) {
     const app = fastify({
@@ -39,6 +40,7 @@ export async function bootstrap({ port = 3001, orm }: { port?: number, orm?: Mik
     app.register(user_plugin);
     app.register(family_plugin);
     app.register(push_plugin);
+    app.register(version_plugin);
 
 
     app.addHook('preHandler', (req, _res, next) => {
