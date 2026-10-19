@@ -14,6 +14,7 @@ export default async function family_group_plugin(app: FastifyInstance) {
                         .prop("uuid", S.string().required())
                         .prop("groupUuid", S.string().required())
                         .prop("originName", S.string().required())
+                        .prop("originUuid", S.string().required())
                         .prop("targetUuid", S.string().required())
                         .prop("targetName", S.string().required())
                         .prop("familyId", S.string().required())

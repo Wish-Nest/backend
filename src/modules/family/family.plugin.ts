@@ -1,6 +1,6 @@
 import {FastifyInstance} from "fastify";
 import {S} from "fluent-json-schema";
-import {create_family, get_family, get_user_families, create_virtual_member, rename_member, set_member_priority} from "./family.controller.js";
+import {create_family, get_family, get_user_families, create_virtual_member, rename_member, set_member_priority, set_member_image} from "./family.controller.js";
 import family_invitation_plugin from "./invitation/invitation.plugin.js";
 import family_group_plugin from "./group/group.plugin.js";
 import family_gift_plugin from "./gift/gift.plugin.js";
@@ -53,6 +53,7 @@ export default async function family_plugin(app: FastifyInstance) {
                             .prop('name', S.string().required())
                             .prop('virtual', S.boolean().required())
                             .prop('priorityEnabled', S.boolean().required())
+                            .prop('image', S.anyOf([S.string(), S.null()]))
                     ))
             }
         }
@@ -91,6 +92,23 @@ export default async function family_plugin(app: FastifyInstance) {
             }
         }
     }, set_member_priority)
+
+    // Image de profil d'un membre (soi-même, ou un membre « liste gérée » pour
+    // n'importe quel membre de la famille). L'upload se fait via POST /api/upload.
+    app.put('/api/familymember/:memberUuid/image', {
+        preHandler: [app.authenticate],
+        schema: {
+            params: S.object()
+                .prop('memberUuid', S.string().required()),
+            body: S.object()
+                .prop('image', S.anyOf([S.string(), S.null()]).required()),
+            response: {
+                200: S.object()
+                    .prop('uuid', S.string().required())
+                    .prop('image', S.anyOf([S.string(), S.null()]))
+            }
+        }
+    }, set_member_image)
 
     // Route pour créer un membre dont la liste sera gérée par la famille
     app.post('/api/family/virtual-member', {

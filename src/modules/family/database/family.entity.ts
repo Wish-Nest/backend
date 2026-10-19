@@ -42,4 +42,8 @@ export class UserFamily {
     // Le switch n'est affiché qu'au propriétaire de la liste.
     @Property({type: 'boolean', name: 'priority_enabled', defaultRaw: 'true'})
     priorityEnabled: boolean = true;
+
+    // Image de profil du membre au sein de la famille (uploadée via /api/upload).
+    @Property({type: "string", nullable: true})
+    image?: string | null;
 }

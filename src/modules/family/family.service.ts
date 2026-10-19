@@ -157,6 +157,15 @@ class FamilyService implements IFamilyService {
         return member;
     }
 
+    // Change l'image de profil d'un membre au sein de la famille (null = retrait).
+    public async setMemberImage(member: UserFamily, image: string | null) {
+        member.image = image;
+
+        await this.userFamilyRepository.getEntityManager().persistAndFlush(member);
+
+        return member;
+    }
+
     // Nouvelle méthode: créer un membre dont la liste sera gérée par la famille
     // (utilisateur fictif sans accès + ajout à la famille)
     public async createVirtualMember(familyId: string, username: string, email?: string) {

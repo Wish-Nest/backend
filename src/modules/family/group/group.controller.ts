@@ -35,6 +35,7 @@ export async function get_user_requests(req: FastifyRequest<{
             uuid: request.uuid,
             groupUuid: request.group.uuid,
             originName: request.group.family.getMember(request.user.uuid)?.name,
+            originUuid: request.user.uuid,
             targetUuid: request.group.target.uuid,
             targetName: request.group.family.getMember(request.group.target.uuid)?.name,
             familyId: family.uuid

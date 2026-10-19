@@ -51,7 +51,8 @@ export async function get_family(req: FastifyRequest<{
                 name: member.name,
                 virtual: member.user.virtual,
                 // Une valeur absente/nulle (lignes d'avant la colonne) = activé.
-                priorityEnabled: member.priorityEnabled !== false
+                priorityEnabled: member.priorityEnabled !== false,
+                image: member.image ?? null
             }
         })
     })
@@ -180,6 +181,62 @@ export async function set_member_priority(req: FastifyRequest<{
     return reply.status(200).send({
         uuid: updated.uuid,
         priorityEnabled: updated.priorityEnabled !== false
+    });
+}
+
+/**
+ * Change l'image de profil d'un membre de la famille.
+ * Règles :
+ *  - un membre réel ne peut changer que sa propre image ;
+ *  - un membre « liste gérée » (utilisateur fictif) peut être mis à jour par
+ *    n'importe quel membre de la famille.
+ * L'upload est fait séparément via POST /api/upload ; on stocke ici l'URL.
+ */
+export async function set_member_image(req: FastifyRequest<{
+    Params: {
+        memberUuid: string
+    },
+    Body: {
+        image: string | null
+    }
+}>, reply: FastifyReply) {
+    const {memberUuid} = req.params;
+    const image = req.body?.image;
+    const user = req.user;
+
+    if (!user) {
+        return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    // Accepte une URL de fichier déjà uploadée (/uploads/...) ou null (retrait).
+    // La validation JSON coercive de Fastify (AJV) transforme null en "" et un
+    // nombre en chaîne : on normalise "" en null et on exige le préfixe /uploads/.
+    const normalized = image === "" ? null : image;
+    if (normalized !== null && (typeof normalized !== 'string' || !/^\/uploads\/[A-Za-z0-9._-]+$/.test(normalized))) {
+        return reply.status(400).send({ error: 'Bad parameter: image must be an uploaded file URL (/uploads/...) or null' });
+    }
+
+    const member = await FamilyService.getMemberOfFamilyByUuid(memberUuid);
+    if (!member) {
+        return reply.status(404).send({ error: 'Member not found' });
+    }
+
+    // L'appelant doit appartenir à la famille du membre.
+    if (!member.family.isMember(user.uuid)) {
+        return reply.status(403).send({ error: 'Forbidden' });
+    }
+
+    const isSelf = member.user.uuid === user.uuid;
+    const isManagedMember = member.user.virtual === true;
+    if (!isSelf && !isManagedMember) {
+        return reply.status(403).send({ error: 'Forbidden, you can only change your own image' });
+    }
+
+    const updated = await FamilyService.setMemberImage(member, normalized);
+
+    return reply.status(200).send({
+        uuid: updated.uuid,
+        image: updated.image ?? null
     });
 }
 
