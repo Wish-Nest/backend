@@ -118,12 +118,13 @@ export async function rename_member(req: FastifyRequest<{
         return reply.status(403).send({ error: 'Forbidden' });
     }
 
-    // Chacun peut se renommer lui-même ; tout membre de la famille peut renommer un
-    // membre virtuel, peu importe qui l'a créé. Les autres membres réels sont protégés.
+    // Chacun peut se renommer lui-même ; tout membre de la famille peut renommer
+    // un membre dont la liste est gérée par la famille, peu importe qui l'a créé.
+    // Les autres membres sont protégés.
     const isSelf = member.user.uuid === user.uuid;
     const isVirtual = member.user.virtual === true;
     if (!isSelf && !isVirtual) {
-        return reply.status(403).send({ error: 'Forbidden, you can only rename yourself or a virtual member' });
+        return reply.status(403).send({ error: 'Forbidden, you can only rename yourself or a member whose list is managed by the family' });
     }
 
     const updated = await FamilyService.renameFamilyMember(member, trimmedName);
@@ -139,7 +140,7 @@ export async function rename_member(req: FastifyRequest<{
 /**
  * Active ou désactive l'ordonnancement par priorité de sa propre liste.
  * Visible uniquement sur SA liste (le frontend n'affiche pas le switch sur les
- * membres virtuels), et le serveur exige que l'appelant soit le propriétaire.
+ * listes gérées par la famille), et le serveur exige que l'appelant soit le propriétaire.
  * Le réglage s'applique à tous les visiteurs de la liste.
  */
 export async function set_member_priority(req: FastifyRequest<{
@@ -168,8 +169,8 @@ export async function set_member_priority(req: FastifyRequest<{
         return reply.status(404).send({ error: 'Member not found' });
     }
 
-    // Seul le propriétaire de la liste peut changer ce réglage (les listes de
-    // membres virtuels ont un utilisateur fictif : cet appelant échoue donc déjà).
+    // Seul le propriétaire de la liste peut changer ce réglage (les listes gérées
+    // par la famille ont un utilisateur fictif : cet appelant échoue donc déjà).
     if (member.user.uuid !== user.uuid) {
         return reply.status(403).send({ error: "Forbidden, only the list owner can change the priority ordering" });
     }
@@ -206,7 +207,7 @@ export async function create_virtual_member(req: FastifyRequest<{
 
     const result = await FamilyService.createVirtualMember(familyId, username, email);
     if (!result) {
-        return reply.status(500).send({ error: 'Failed to create virtual member' });
+        return reply.status(500).send({ error: 'Failed to create the member' });
     }
 
     return reply.status(200).send({

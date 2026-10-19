@@ -58,7 +58,7 @@ export default async function family_plugin(app: FastifyInstance) {
         }
     }, get_family)
 
-    // Renommer un membre : soi-même, ou un membre virtuel (peu importe qui l'a créé)
+    // Renommer un membre : soi-même, ou un membre dont la liste est gérée par la famille (peu importe qui l'a créé)
     app.put('/api/familymember/:memberUuid/name', {
         preHandler: [app.authenticate],
         schema: {
@@ -92,7 +92,7 @@ export default async function family_plugin(app: FastifyInstance) {
         }
     }, set_member_priority)
 
-    // Route pour créer un membre virtuel
+    // Route pour créer un membre dont la liste sera gérée par la famille
     app.post('/api/family/virtual-member', {
         preHandler: [app.authenticate],
         schema: {

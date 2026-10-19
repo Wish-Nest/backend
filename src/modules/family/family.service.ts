@@ -157,7 +157,8 @@ class FamilyService implements IFamilyService {
         return member;
     }
 
-    // Nouvelle méthode: créer un membre virtuel (utilisateur fake + ajout à la famille)
+    // Nouvelle méthode: créer un membre dont la liste sera gérée par la famille
+    // (utilisateur fictif sans accès + ajout à la famille)
     public async createVirtualMember(familyId: string, username: string, email?: string) {
         const family = await this.familyRepository.findOne({ uuid: familyId }, { populate: ['*'] });
         if (!family) {
@@ -190,7 +191,7 @@ class FamilyService implements IFamilyService {
 
                 if (memberUuids.length > 0) {
                     await PushService.sendNotificationToUsers(memberUuids, {
-                        title: `Un membre virtuel a été ajouté dans la famille "${family.name}"`,
+                        title: `Nouveau membre dans la famille "${family.name}"`,
                         body: `${username} a été ajouté(e) à la famille.`,
                         data: {
                             url: `/families/${family.uuid}`
