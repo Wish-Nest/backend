@@ -49,7 +49,9 @@ export async function get_family(req: FastifyRequest<{
                 uuid: member.uuid,
                 userUuid: member.user.uuid,
                 name: member.name,
-                virtual: member.user.virtual
+                virtual: member.user.virtual,
+                // Une valeur absente/nulle (lignes d'avant la colonne) = activé.
+                priorityEnabled: member.priorityEnabled !== false
             }
         })
     })
@@ -131,6 +133,52 @@ export async function rename_member(req: FastifyRequest<{
         userUuid: updated.user.uuid,
         name: updated.name,
         virtual: updated.user.virtual === true
+    });
+}
+
+/**
+ * Active ou désactive l'ordonnancement par priorité de sa propre liste.
+ * Visible uniquement sur SA liste (le frontend n'affiche pas le switch sur les
+ * membres virtuels), et le serveur exige que l'appelant soit le propriétaire.
+ * Le réglage s'applique à tous les visiteurs de la liste.
+ */
+export async function set_member_priority(req: FastifyRequest<{
+    Params: {
+        memberUuid: string
+    },
+    Body: {
+        enabled: boolean
+    }
+}>, reply: FastifyReply) {
+    const {memberUuid} = req.params;
+    const enabled = req.body?.enabled;
+    const user = req.user;
+
+    if (!user) {
+        return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    // Fastify peut coercer les scalaires : on vérifie explicitement le type.
+    if (typeof enabled !== 'boolean') {
+        return reply.status(400).send({ error: 'Bad parameter: enabled must be a boolean' });
+    }
+
+    const member = await FamilyService.getMemberOfFamilyByUuid(memberUuid);
+    if (!member) {
+        return reply.status(404).send({ error: 'Member not found' });
+    }
+
+    // Seul le propriétaire de la liste peut changer ce réglage (les listes de
+    // membres virtuels ont un utilisateur fictif : cet appelant échoue donc déjà).
+    if (member.user.uuid !== user.uuid) {
+        return reply.status(403).send({ error: "Forbidden, only the list owner can change the priority ordering" });
+    }
+
+    const updated = await FamilyService.setPriorityEnabled(member, enabled);
+
+    return reply.status(200).send({
+        uuid: updated.uuid,
+        priorityEnabled: updated.priorityEnabled !== false
     });
 }
 

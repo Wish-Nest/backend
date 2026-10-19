@@ -70,7 +70,8 @@ class FamilyService implements IFamilyService {
         const userFamily = this.userFamilyRepository.create({
             user: Reference.createNakedFromPK(User, userId),
             family,
-            name: username
+            name: username,
+            priorityEnabled: true
         });
 
         await this.familyRepository.getEntityManager().persistAndFlush(family);
@@ -93,7 +94,8 @@ class FamilyService implements IFamilyService {
         const userFamily = this.userFamilyRepository.create({
             user: Reference.createNakedFromPK(User, userId),
             family,
-            name: username
+            name: username,
+            priorityEnabled: true
         });
 
         await this.userFamilyRepository.getEntityManager().persistAndFlush(userFamily);
@@ -145,6 +147,16 @@ class FamilyService implements IFamilyService {
         return member;
     }
 
+    // Active ou désactive l'ordonnancement par priorité de la liste d'un membre.
+    // Le réglage est serveur : il s'applique à toutes les vues de la liste.
+    public async setPriorityEnabled(member: UserFamily, enabled: boolean) {
+        member.priorityEnabled = enabled;
+
+        await this.userFamilyRepository.getEntityManager().persistAndFlush(member);
+
+        return member;
+    }
+
     // Nouvelle méthode: créer un membre virtuel (utilisateur fake + ajout à la famille)
     public async createVirtualMember(familyId: string, username: string, email?: string) {
         const family = await this.familyRepository.findOne({ uuid: familyId }, { populate: ['*'] });
@@ -161,7 +173,8 @@ class FamilyService implements IFamilyService {
         const userFamily = this.userFamilyRepository.create({
             user: Reference.createNakedFromPK(User, user.uuid),
             family,
-            name: username
+            name: username,
+            priorityEnabled: true
         });
 
         await this.userFamilyRepository.getEntityManager().persistAndFlush(userFamily);

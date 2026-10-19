@@ -1,6 +1,6 @@
 import {FastifyInstance} from "fastify";
 import {S} from "fluent-json-schema";
-import {create_family, get_family, get_user_families, create_virtual_member, rename_member} from "./family.controller.js";
+import {create_family, get_family, get_user_families, create_virtual_member, rename_member, set_member_priority} from "./family.controller.js";
 import family_invitation_plugin from "./invitation/invitation.plugin.js";
 import family_group_plugin from "./group/group.plugin.js";
 import family_gift_plugin from "./gift/gift.plugin.js";
@@ -52,6 +52,7 @@ export default async function family_plugin(app: FastifyInstance) {
                             .prop('userUuid', S.string().required())
                             .prop('name', S.string().required())
                             .prop('virtual', S.boolean().required())
+                            .prop('priorityEnabled', S.boolean().required())
                     ))
             }
         }
@@ -74,6 +75,22 @@ export default async function family_plugin(app: FastifyInstance) {
             }
         }
     }, rename_member)
+
+    // Activer / désactiver l'ordonnancement par priorité de sa propre liste
+    app.put('/api/familymember/:memberUuid/priority', {
+        preHandler: [app.authenticate],
+        schema: {
+            params: S.object()
+                .prop('memberUuid', S.string().required()),
+            body: S.object()
+                .prop('enabled', S.boolean().required()),
+            response: {
+                200: S.object()
+                    .prop('uuid', S.string().required())
+                    .prop('priorityEnabled', S.boolean().required())
+            }
+        }
+    }, set_member_priority)
 
     // Route pour créer un membre virtuel
     app.post('/api/family/virtual-member', {

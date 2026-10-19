@@ -35,4 +35,11 @@ export class UserFamily {
 
     @Property({type: 'string'})
     name!: string;
+
+    // Ordonnancement par priorité de la liste de souhaits de ce membre.
+    // Désactivé : les badges de priorité sont masqués et le glisser-déposer
+    // supprimé pour TOUS les visiteurs de la liste (réglage stocké côté serveur).
+    // Le switch n'est affiché qu'au propriétaire de la liste.
+    @Property({type: 'boolean', name: 'priority_enabled', defaultRaw: 'true'})
+    priorityEnabled: boolean = true;
 }
