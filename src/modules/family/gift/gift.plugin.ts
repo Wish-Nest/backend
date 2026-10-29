@@ -157,4 +157,16 @@ export default async function family_gift_plugin(app: FastifyInstance) {
             }
         }
     }, create_private_gift)
+
+    app.get("/api/user/taken-gifts", {
+        preHandler: [app.authenticate],
+        schema: {
+            response: {
+                200: S.array().items(S.object())
+            }
+        }
+    }, async (req, reply) => {
+        const {get_taken_gifts} = await import("./gift.controller.js");
+        return get_taken_gifts(req, reply);
+    })
 }

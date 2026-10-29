@@ -345,6 +345,97 @@ class GiftService {
 
         return null;
     }
+
+    async getGiftsTakenByUser(userUuid: string, derivedKey: DerivedKey) {
+        const userEntity = await UserService.getUserByUUID(userUuid);
+        if (!userEntity) {
+            return [];
+        }
+        const userPrivateKey = await userEntity.getPrivateKey(derivedKey);
+        const groups = await GroupService.getGroupsForUser(userUuid);
+        const takenGifts: any[] = [];
+
+        for (const group of groups) {
+            const actorUserMember = await group.getUser(userUuid);
+            if (!actorUserMember) {
+                continue;
+            }
+            let privateKey;
+            try {
+                privateKey = await actorUserMember.getPrivateKey(userPrivateKey);
+            } catch (e) {
+                continue;
+            }
+            let groupPrivateData;
+            try {
+                groupPrivateData = await group.getPrivateData(privateKey);
+            } catch (e) {
+                continue;
+            }
+
+            // Check regular gifts
+            for (const familyMember of group.family?.members?.getItems?.() || []) {
+                // get public gifts of this member
+                const gifts = await this.getGiftByMemberUuid(familyMember.uuid);
+                if (!gifts) {
+                    continue;
+                }
+                for (const gift of gifts) {
+                    const giftPrivate = groupPrivateData[gift.uuid];
+                    if (giftPrivate && giftPrivate.takenBy === userUuid) {
+                        takenGifts.push({
+                            uuid: gift.uuid,
+                            title: gift.title,
+                            content: gift.content,
+                            additionalLinks: gift.additional_links ?? [],
+                            image: (gift as any).image ?? null,
+                            type: 'public',
+                            takenBy: giftPrivate.takenBy,
+                            member: {
+                                uuid: familyMember.uuid,
+                                userUuid: familyMember.user.uuid,
+                                name: familyMember.name
+                            },
+                            family: {
+                                uuid: group.family.uuid,
+                                name: group.family.name
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Check private/additional gifts
+            const additionalGifts = groupPrivateData.additional_gifts || [];
+            for (const additionalGift of additionalGifts) {
+                // Check if taken by this user - we need to look up the gift's private data
+                const giftPrivate = groupPrivateData[additionalGift.uuid];
+                if (giftPrivate && giftPrivate.takenBy === userUuid) {
+                    takenGifts.push({
+                        uuid: additionalGift.uuid,
+                        title: additionalGift.title,
+                        content: additionalGift.content,
+                        additionalLinks: additionalGift.additional_links ?? [],
+                        image: (additionalGift as any).image ?? null,
+                        type: 'private',
+                        takenBy: giftPrivate.takenBy,
+                        byUserUuid: additionalGift.byUserUuid,
+                        member: {
+                            uuid: additionalGift.userFamily?.uuid,
+                            userUuid: additionalGift.userFamily?.user?.uuid,
+                            name: additionalGift.userFamily?.name
+                        },
+                        family: {
+                            uuid: group.family.uuid,
+                            name: group.family.name
+                        }
+                    });
+                }
+            }
+        }
+
+        return takenGifts;
+    }
 }
 
 export default new GiftService();

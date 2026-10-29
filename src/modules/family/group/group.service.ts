@@ -35,6 +35,18 @@ class GroupService {
         return group;
     }
 
+    public async getGroupsForUser(userUuid: string) : Promise<Group[]> {
+        const groupUsers = await this.guRepository.find({
+            user: {
+                uuid: userUuid
+            }
+        }, {
+            populate: ['group', 'group.*', 'group.family', 'group.target', 'group.group_users']
+        });
+
+        return groupUsers.map((gu) => gu.group);
+    }
+
     public async getGroupByTargetUuid(targetUuid: string, familyUuid: string) : Promise<null|Group> {
         const group = await this.gRepository.findOne({
             target: {
@@ -274,6 +286,7 @@ class GroupService {
             return privateData[gift.uuid];
         })
     }
+
 }
 
 export default new GroupService();

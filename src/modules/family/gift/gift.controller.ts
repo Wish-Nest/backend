@@ -484,3 +484,18 @@ export async function create_private_gift(req: FastifyRequest<{
 
     return reply.status(201).send({ message: 'ok' });
 }
+
+export async function get_taken_gifts(req: FastifyRequest, reply: FastifyReply) {
+    const user = req.user;
+    if (!user) {
+        return reply.status(401).send({error: "Unauthorized"});
+    }
+
+    try {
+        const takenGifts = await GiftService.getGiftsTakenByUser(user.uuid, user.derived_key);
+        return reply.status(200).send(takenGifts);
+    } catch (error) {
+        console.error("Error fetching taken gifts:", error);
+        return reply.status(500).send({error: "Failed to fetch taken gifts"});
+    }
+}
