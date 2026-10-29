@@ -373,13 +373,20 @@ class GiftService {
                 continue;
             }
 
+            // `family.members` n'est pas peuplé par getGroupsForUser(). Sans ce
+            // chargement explicite, members.getItems() lève une erreur MikroORM
+            // ("Collection<UserFamily> ... not initialized").
+            const familyMembers = await group.family.members.loadItems({populate: ['user']});
+            // Un groupe ne gère que les cadeaux de sa cible : inutile de parcourir
+            // les cadeaux des autres membres de la famille.
+            const targetMember = familyMembers.find(member => member.user.uuid === group.target.uuid);
+            if (!targetMember) {
+                continue;
+            }
+
             // Check regular gifts
-            for (const familyMember of group.family?.members?.getItems?.() || []) {
-                // get public gifts of this member
-                const gifts = await this.getGiftByMemberUuid(familyMember.uuid);
-                if (!gifts) {
-                    continue;
-                }
+            const gifts = await this.getGiftByMemberUuid(targetMember.uuid);
+            if (gifts) {
                 for (const gift of gifts) {
                     const giftPrivate = groupPrivateData[gift.uuid];
                     if (giftPrivate && giftPrivate.takenBy === userUuid) {
@@ -392,9 +399,9 @@ class GiftService {
                             type: 'public',
                             takenBy: giftPrivate.takenBy,
                             member: {
-                                uuid: familyMember.uuid,
-                                userUuid: familyMember.user.uuid,
-                                name: familyMember.name
+                                uuid: targetMember.uuid,
+                                userUuid: targetMember.user.uuid,
+                                name: targetMember.name
                             },
                             family: {
                                 uuid: group.family.uuid,
@@ -421,9 +428,9 @@ class GiftService {
                         takenBy: giftPrivate.takenBy,
                         byUserUuid: additionalGift.byUserUuid,
                         member: {
-                            uuid: additionalGift.userFamily?.uuid,
-                            userUuid: additionalGift.userFamily?.user?.uuid,
-                            name: additionalGift.userFamily?.name
+                            uuid: targetMember.uuid,
+                            userUuid: targetMember.user.uuid,
+                            name: targetMember.name
                         },
                         family: {
                             uuid: group.family.uuid,

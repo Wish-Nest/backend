@@ -162,7 +162,24 @@ export default async function family_gift_plugin(app: FastifyInstance) {
         preHandler: [app.authenticate],
         schema: {
             response: {
-                200: S.array().items(S.object())
+                200: S.array().items(
+                    S.object()
+                        .prop("uuid", S.string().required())
+                        .prop("title", S.string().required())
+                        .prop("content", S.anyOf([S.string(), S.null()]))
+                        .prop("additionalLinks", S.array().items(S.string()))
+                        .prop("image", S.anyOf([S.string(), S.null()]))
+                        .prop("type", S.string().required())
+                        .prop("takenBy", S.anyOf([S.string(), S.null()]))
+                        .prop("byUserUuid", S.string())
+                        .prop("member", S.object()
+                            .prop("uuid", S.string().required())
+                            .prop("userUuid", S.string().required())
+                            .prop("name", S.string().required()))
+                        .prop("family", S.object()
+                            .prop("uuid", S.string().required())
+                            .prop("name", S.string().required()))
+                )
             }
         }
     }, async (req, reply) => {
